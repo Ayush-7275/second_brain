@@ -1,7 +1,7 @@
 import { Model, Schema, model } from "mongoose";
 
 
-const contentType = ["image", "video", "audio", "article"];
+const contentType = ["Youtube","Twitter"];
 
 const userSchema = new Schema({
     username: { type: String, unique: true, required: true },
@@ -11,10 +11,9 @@ const userSchema = new Schema({
 export const Users = model("Users", userSchema);
 
 const contentSchema = new Schema({
+    title: { type: String, required: true },//ref mei model ke andar wala name dete hain
     link: { type: String, required: true },
     type: { type: String, required: true },
-    title: { type: String, required: true },
-    tags: [{ type: Schema.Types.ObjectId, ref: "Tags" }],//ref mei model ke andar wala name dete hain
     userId: { type: Schema.Types.ObjectId, ref: "Users", required: true },
 });
 

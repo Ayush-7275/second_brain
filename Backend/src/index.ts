@@ -6,6 +6,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcrypt";
 import { mongoPasswd, JWT_PASSWORD, HASHINGPASSWD } from "./secret.js";
 import { verifying } from "./middleware.js";
+import cors from 'cors'
 
 const app = express();
 
@@ -14,6 +15,11 @@ mongoose.connect(mongoPasswd).then(() => {
 });
 
 app.use(express.json());
+app.use(cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+    exposedHeaders: ["token"],
+  }))
 
 enum errorStatus {
     succesfull = 200,
@@ -45,7 +51,9 @@ app.post("/api/v1/signup", async (req, res) => {
                 });
             });
 
-            res.status(errorStatus.succesfull).send("Sign up Succesfull");
+            res.status(errorStatus.succesfull).json({
+                message : 'Sign up successfull'
+            })
         } catch (e: any) {
             res.status(errorStatus.inputError).json({
                 message: "Username exists",
@@ -55,7 +63,9 @@ app.post("/api/v1/signup", async (req, res) => {
     } else {
         const error = parsedResult.error.issues;
         const errorMessages = error.map((issue) => issue.message);
-        res.status(errorStatus.clientError).send(errorMessages);
+        res.status(errorStatus.clientError).json({
+            message : errorMessages
+        });
     }
 });
 
@@ -69,7 +79,9 @@ app.post("/api/v1/signin", async (req, res) => {
     if (user != null) {
         bcrypt.compare(password, user.password, (err, result) => {
             if (!result) {
-                res.status(errorStatus.inputError).send("Wrong Crendentials");
+                res.status(errorStatus.inputError).json({
+                    message : 'Wrong Credentials'
+                });
             } else {
                 const token = jwt.sign(
                     {
@@ -78,8 +90,9 @@ app.post("/api/v1/signin", async (req, res) => {
                     JWT_PASSWORD
                 );
                 res.status(errorStatus.succesfull)
-                    .header("token", token)
-                    .send("Sign in successfull"); //header mei token yaha bhej
+                    .header("token", token).json({
+                        message:'Successfully signed in'
+                    })
             }
         });
     } else {
@@ -94,10 +107,9 @@ app.post("/api/v1/content", verifying, async (req: any, res: any) => {
 
     try {
         await Content.create({
+            title: title,
             link: link,
             type: type,
-            title: title,
-            tags: [],
             userId: req.userId,
         });
         res.status(errorStatus.succesfull).json({
@@ -124,7 +136,7 @@ app.get("/api/v1/content", verifying, async (req, res) => {
 app.delete("/api/v1/content", verifying, async (req, res) => {
     //@ts-ignore
     const userId = req.userId;
-    const contentId = req.body.contentId;
+    const contentId = req.params.contentId;
 
     await Content.deleteMany({ contentId, userId: userId });
     res.status(errorStatus.succesfull).json({ message: "Deleted" });
